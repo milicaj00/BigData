@@ -162,6 +162,7 @@ cython_debug/
 
 Berlin
 emissions.csv
+fcd.csv
 b_emissions_1.csv
 b_fcd.csv
 b_fcd_1.csv
