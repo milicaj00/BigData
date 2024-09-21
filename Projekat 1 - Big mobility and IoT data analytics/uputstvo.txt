@@ -1,0 +1,32 @@
+
+sumo -c osm.sumocfg --emission-output b_emissions.xml
+sumo -c osm.sumocfg --fcd-output b_fcd.xml --fcd-output.geo
+
+python tools/xml/xml2csv.py "C:\Users\milica\Desktop\Elfak\master\Big Data\Projekat 1\Berlin\b_fcd.xml"
+
+python tools/xml/xml2csv.py "C:\Users\milica\Desktop\Elfak\master\Big Data\Projekat 1\Berlin\b_emissions.xml"
+ 
+
+
+
+docker network create -d bde
+docker-compose up
+
+docker cp b_emissions.csv namenode:/data
+docker cp b_fcd.csv namenode:/data
+docker exec -it namenode bash
+hdfs dfs -mkdir /data
+hdfs dfs -put /data/b_emissions.csv /data
+hdfs dfs -put /data/b_fcd.csv /data
+
+
+docker build --rm -t bde/spark-app .
+
+docker run --net bde -e SPARK_APPLICATION_ARGS="vehicle_count spark vehicle 52.517871 13.380510 0.2 500 1000 truck" -d bde/spark-app
+docker run --net bde -e SPARK_APPLICATION_ARGS="pollution_count spark pollution 500 1000" -d bde/spark-app
+docker run --net bde -e SPARK_APPLICATION_ARGS="fuel_count spark fuel 500 1000" -d bde/spark-app
+
+docker run --net bde -e SPARK_APPLICATION_ARGS="vehicle_count local vehicle 52.517871 13.380510 0.2 500 1000 truck" -d bde/spark-app
+docker run --net bde -e SPARK_APPLICATION_ARGS="pollution_count local pollution 500 1000" -d bde/spark-app
+docker run --net bde -e SPARK_APPLICATION_ARGS="fuel_count local fuel 500 1000" -d bde/spark-app
+
