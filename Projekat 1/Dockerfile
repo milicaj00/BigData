@@ -1,4 +1,0 @@
-FROM bde2020/spark-python-template:3.1.2-hadoop3.2
-
-ENV SPARK_APPLICATION_PYTHON_LOCATION app/main.py
-ENV SPARK_APPLICATION_ARGS "vehicle 52.517871 13.380510 0.2 500 1000 truck"
