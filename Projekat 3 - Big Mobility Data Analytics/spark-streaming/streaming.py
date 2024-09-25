@@ -102,13 +102,9 @@ if __name__ == "__main__":
     )
 
     # primena algoritama
-
     clustered_df = cluster_model.transform(dfFcd)
     predicted_df = regression_model.transform(dfEmission)
 
-
-
-    # OTPAKOVANJE 
 
     predicted_df = predicted_df.select(["vehicle_fuel", "vehicle_speed", "vehicle_noise", "vehicle_NOx", "prediction"])
     clustered_df = clustered_df.select(["vehicle_x", "vehicle_y", "congestion_cluster"])

@@ -33,7 +33,7 @@ if __name__ == '__main__':
     fcd_features = ["vehicle_x", "vehicle_y"]
     kmeans_assembler = VectorAssembler(inputCols=fcd_features, outputCol="fcd_features")
   
-    kmeans = KMeans(k=5, seed=1, featuresCol="fcd_features", predictionCol="congestion_cluster")
+    kmeans = KMeans(k=4, seed=1, featuresCol="fcd_features", predictionCol="congestion_cluster")
     kmeans_pipeline = Pipeline(stages=[kmeans_assembler, kmeans])
     kmeans_model = kmeans_pipeline.fit(trainData)
     predictions2 = kmeans_model.transform(testData)

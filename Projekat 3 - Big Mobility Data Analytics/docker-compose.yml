@@ -25,18 +25,6 @@ services:
         depends_on:
             - zookeeper
 
-    # producer-3:
-    #   container_name: producer-3
-    #   build:
-    #     context: .
-    #     dockerfile: kafka-producer/Dockerfile
-    #   depends_on:
-    #     - kafka-3
-    #   environment:
-    #     SCRIPT: kafka-producer/producer.py
-    #     KAFKA_HOST: kafka-3:9092
-    #     KAFKA_INTERVAL: 1
-
     spark:
         container_name: spark
         image: docker.io/bitnami/spark:latest
@@ -60,7 +48,7 @@ services:
             - 9000:9000
         volumes:
             - hadoop_namenode:/hadoop/dfs/name
-            - $HOME/data:/data
+            - ./data:/data
         environment:
             - CLUSTER_NAME=test
         env_file:
@@ -121,6 +109,7 @@ volumes:
     hadoop_datanode:
     hadoop_historyserver:
     appdata:
+
 
 networks:
     default:
