@@ -24,11 +24,22 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 
 import java.time.Duration;
 import java.util.Date;
 
 public class App {
+
+    static String kafka_url = "kafka:9092";
+    static String emission_topic = "berlin-emission";
+    static String pollution_topic = "berlin-pollution";
+    static String fcd_topic = "berlin-fcd";
+    static String traffic_topic = "berlin-traffic";
+
+    static String window_type = "tumbling";
+    static int window_duration = 2;
+    static int slide_duration = 30;
     
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -37,18 +48,18 @@ public class App {
 
 
         Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "kafka:9092");
+        properties.setProperty("bootstrap.servers", kafka_url);
 
         KafkaSource<VehicleInfo> vehicleInfoKafkaSource = KafkaSource.<VehicleInfo>builder()
-                .setBootstrapServers("kafka:9092")
-                .setTopics("stockholm-fcd")
+                .setBootstrapServers(kafka_url)
+                .setTopics(fcd_topic)
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setDeserializer(KafkaRecordDeserializationSchema.valueOnly(vehicleSchema))
                 .build();
 
         KafkaSource<EmissionInfo> emissionInfoKafkaSource = KafkaSource.<EmissionInfo>builder()
-                .setBootstrapServers("kafka:9092")
-                .setTopics("stockholm-emission")
+                .setBootstrapServers(kafka_url)
+                .setTopics(emission_topic)
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setDeserializer(KafkaRecordDeserializationSchema.valueOnly(emissionSchema))
                 .build();
@@ -74,27 +85,36 @@ public class App {
 
         // --------------------------------------------------------------------------------------------------------------------
 
-        WindowedStream<VehicleInfo, String, TimeWindow> laneGroupedWindowedStream = vehicleInfoDataStream
+        WindowedStream<VehicleInfo, String, TimeWindow> laneGroupedWindowedStream;
+        WindowedStream<EmissionInfo, String, TimeWindow> laneGroupedWindowedStream2;
+        
+        if (window_type == "tumbling") {
+            laneGroupedWindowedStream = vehicleInfoDataStream
                 .keyBy(VehicleInfo::getVehicleLane)
-                .window(SlidingEventTimeWindows.of(Time.minutes(2), Time.seconds(30)));
+                .window(TumblingEventTimeWindows.of(Time.minutes(window_duration)));
 
-
-        WindowedStream<EmissionInfo, String, TimeWindow> laneGroupedWindowedStream2 = emissionInfoDataStream
+            laneGroupedWindowedStream2 = emissionInfoDataStream
                 .keyBy(EmissionInfo::getVehicleLane)
-                .window(SlidingEventTimeWindows.of(Time.minutes(2), Time.seconds(30)));
+                .window(TumblingEventTimeWindows.of(Time.minutes(window_duration)));
+
+        } else {
+            laneGroupedWindowedStream = vehicleInfoDataStream
+                .keyBy(VehicleInfo::getVehicleLane)
+                .window(SlidingEventTimeWindows.of(Time.minutes(window_duration), Time.seconds(slide_duration)));
+        
+            laneGroupedWindowedStream2 = emissionInfoDataStream
+                .keyBy(EmissionInfo::getVehicleLane)
+                .window(SlidingEventTimeWindows.of(Time.minutes(window_duration), Time.seconds(slide_duration)));
+        
+        }
 
         //pollution
         DataStream<PollutionData> laneEmissions = LaneAnalyzer.laneAggregation(laneGroupedWindowedStream2);
-
-
-        laneEmissions.addSink(new FlinkKafkaProducer<PollutionData>("stockholm-emission2", new PollutionDataSerializer(), properties));
+        laneEmissions.addSink(new FlinkKafkaProducer<PollutionData>(pollution_topic, new PollutionDataSerializer(), properties));
 
         //traffic
         DataStream<TrafficData> vehicleCount = LaneAnalyzer.calculateVehiclesOnLane(laneGroupedWindowedStream);
-
-        
-        vehicleCount.addSink(new FlinkKafkaProducer<TrafficData>("stockholm-fcd2", new TrafficDataSerializer(), properties));
-
+        vehicleCount.addSink(new FlinkKafkaProducer<TrafficData>(traffic_topic, new TrafficDataSerializer(), properties));
 
         env.execute("Stockholm");
     }

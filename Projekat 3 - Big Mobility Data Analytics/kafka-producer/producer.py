@@ -5,7 +5,9 @@ import sys
 import time
 import datetime
 
-emission_file = 'emissions.csv'
+# emission_file = 'emissions.csv'
+emission_file = 'data.csv'
+
 fcd_topic = 'berlin-fcd'
 emission_topic = 'berlin-emission'
 kafka_url =  'kafka:9092'

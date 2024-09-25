@@ -6,9 +6,25 @@ import os
 from cassandra.cluster import Cluster
 
 
-keyspace = "bigdata"
-pollution_table = "pollution"
-traffic_table = "traffic"
+# keyspace = "bigdata"
+# pollution_table = "pollution"
+# traffic_table = "traffic"
+# cassandra_host = "cassandra"
+# cassandra_port = 9042 
+# kafka_url = "kafka:9092" 
+# emission_topic = "berlin-pollution"
+# fcd_topic = "berlin-traffic"
+
+
+emission_topic = os.getenv('POLLUTION_TOPIC')
+fcd_topic = os.getenv('TRAFFIC_TOPIC')
+kafka_url =  os.getenv('KAFKA_URL')
+
+cassandra_port = os.getenv('CASSANDRA_PORT')
+cassandra_host = os.getenv('CASSANDRA_HOST')
+keyspace = os.getenv('CASSANDRA_KEYSPACE')
+pollution_table = os.getenv('POLLUTION_TABLE')
+traffic_table = os.getenv('TRAFFIC_TABLE')
 
 
 def writePollutionToCassandra(writeDF, epochId):
@@ -64,17 +80,11 @@ def create_database(cassandra_session):
 
 if __name__ == "__main__":
 
-    cassandra_host = "cassandra" #os.getenv('CASSANDRA_HOST')
-    cassandra_port = 9042 #int(os.getenv('CASSANDRA_PORT'))
-    kafka_url = "kafka:9092" #os.getenv('KAFKA_URL')
-    #topic = os.getenv('KAFKA_TOPIC')
-    fcd_topic = 'stockholm-fcd2'
-    emission_topic = 'stockholm-emission2'
-    
+
 
     cassandra_cluster = Cluster([cassandra_host], port=cassandra_port)
     cassandra_session = cassandra_cluster.connect()
-    create_database(cassandra_session)
+    # create_database(cassandra_session)
 
     vehicleSchema = StructType([
         StructField("Date", StringType()),
@@ -91,10 +101,9 @@ if __name__ == "__main__":
         StructField("LaneNOx", FloatType()),
         StructField("LanePMx", FloatType()),
         StructField("LaneNoise", FloatType()),
-        # StructField("Timestep", StringType()),
     ])
 
-    appName = "Stockholm2App"
+    appName = "ConsumerApp"
     
     conf = SparkConf()
     conf.set("spark.cassandra.connection.host", cassandra_host)
@@ -102,7 +111,6 @@ if __name__ == "__main__":
 
     conf.setMaster("local")
 
-    #spark = SparkSession.builder.config(conf=conf).appName(appName).config("spark.ui.port", "4041").getOrCreate()
     spark = SparkSession.builder.config(conf=conf).appName(appName).getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
 
@@ -112,9 +120,7 @@ if __name__ == "__main__":
         .option("kafka.bootstrap.servers", kafka_url) \
         .option("subscribe", emission_topic) \
         .load()
-    
-    #dfEmission.printSchema()
-    
+
     dfFcd = spark \
         .readStream \
         .format("kafka") \
@@ -122,17 +128,10 @@ if __name__ == "__main__":
         .option("subscribe", fcd_topic) \
         .load()
     
-    #dfFcd.printSchema()
-
     dfEmissionParsed = dfEmission.selectExpr("CAST(value AS STRING)").select(from_json(col("value"), emissionSchema).alias("data")).select("data.*")
 
     dfFcdParsed = dfFcd.selectExpr("CAST(value AS STRING)").select(from_json(col("value"), vehicleSchema).alias("data")).select("data.*")
     
-    ########## BITNO
-
-    # dfEmissionParsed = dfEmissionParsed.withColumn("date", to_timestamp("date", "MMM dd, yyyy, hh:mm:ss a"))
-    # dfFcdParsed = dfFcdParsed.withColumn("date", to_timestamp("date", "MMM dd, yyyy, hh:mm:ss a"))
-
 
     dfEmissionParsed = dfEmissionParsed.withColumnRenamed("Date", "date") \
                          .withColumnRenamed("LaneId", "laneid") \
@@ -146,9 +145,6 @@ if __name__ == "__main__":
     dfFcdParsed = dfFcdParsed.withColumnRenamed("Date", "date") \
                                 .withColumnRenamed("LaneId", "laneid") \
                                 .withColumnRenamed("VehicleCount", "vehiclecount")
-
-
-    
 
 
     query_traffic = dfFcdParsed.writeStream \

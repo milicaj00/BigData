@@ -8,7 +8,7 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.regression import RandomForestRegressor
 
 emission_file = 'file:///app/emissions.csv'
-data_location = 'hdfs://namenode:9000/data/b_emissions.csv'
+data_location = 'hdfs://namenode:9000/data/data.csv'
 save_kmeans_model = 'hdfs://namenode:9000/models/kmodel'
 save_rf_model = 'hdfs://namenode:9000/models/rmodel'
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     spark.sparkContext.setLogLevel("ERROR")
 
-    data = spark.read.option("header", "true").option("delimiter", ";").csv("hdfs://namenode:9000/dir/b_emissions.csv", inferSchema=True)
+    data = spark.read.option("header", "true").option("delimiter", ";").csv("hdfs://namenode:9000/dir/data.csv", inferSchema=True)
     data=data.limit(1000)
     data.show(10)
 
