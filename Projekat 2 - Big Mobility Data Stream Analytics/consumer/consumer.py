@@ -26,73 +26,13 @@ keyspace = os.getenv('CASSANDRA_KEYSPACE')
 pollution_table = os.getenv('POLLUTION_TABLE')
 traffic_table = os.getenv('TRAFFIC_TABLE')
 
-
-def writePollutionToCassandra(writeDF, epochId):
-    print("Writting in pollution table")
-    writeDF.write \
-        .format("org.apache.spark.sql.cassandra") \
-        .mode("append") \
-        .options(table=pollution_table, keyspace=keyspace) \
-        .save()
-    print("Data written to Cassandra for pollution table")
-
-def writeTrafficToCassandra(writeDF, epochId):
-    print("Writting in traffic table")
-    writeDF.write \
-        .format("org.apache.spark.sql.cassandra") \
-        .mode("append") \
-        .options(table=traffic_table, keyspace=keyspace) \
-        .save()
-    print("Data written to Cassandra for traffic table")
-    
-def create_database(cassandra_session):
-
-    cassandra_session.execute("""
-        CREATE KEYSPACE IF NOT EXISTS bigdata
-        WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1 }
-        """)
-
-    cassandra_session.set_keyspace(keyspace)
-
-    cassandra_session.execute("DROP TABLE IF EXISTS bigdata.pollution")
-    cassandra_session.execute("""
-        CREATE TABLE bigdata.pollution (
-            date TIMESTAMP PRIMARY KEY,
-            laneId text,
-            laneCO double,
-            laneCO2 double,
-            laneHC double,
-            laneNOx double,
-            lanePMx double,
-            laneNoise double
-        )
-    """)
-    
-    cassandra_session.execute("DROP TABLE IF EXISTS bigdata.traffic")
-    cassandra_session.execute("""
-        CREATE TABLE bigdata.traffic (
-            date TIMESTAMP PRIMARY KEY,
-            laneId text,
-            vehicleCount int
-        )
-    """)
-
-
-if __name__ == "__main__":
-
-
-
-    cassandra_cluster = Cluster([cassandra_host], port=cassandra_port)
-    cassandra_session = cassandra_cluster.connect()
-    # create_database(cassandra_session)
-
-    vehicleSchema = StructType([
+vehicleSchema = StructType([
         StructField("Date", StringType()),
         StructField("LaneId", StringType()),
         StructField("VehicleCount", IntegerType())
     ])
 
-    emissionSchema = StructType([
+emissionSchema = StructType([
         StructField("Date", StringType()),
         StructField("LaneId", StringType()),
         StructField("LaneCO", FloatType()),
@@ -102,6 +42,30 @@ if __name__ == "__main__":
         StructField("LanePMx", FloatType()),
         StructField("LaneNoise", FloatType()),
     ])
+
+def writePollution(writeDF, epochId):
+    print("Writting in pollution table")
+    writeDF.write \
+        .format("org.apache.spark.sql.cassandra") \
+        .mode("append") \
+        .options(table=pollution_table, keyspace=keyspace) \
+        .save()
+    print("Data written to Cassandra for pollution table")
+
+def writeTraffic(writeDF, epochId):
+    print("Writting in traffic table")
+    writeDF.write \
+        .format("org.apache.spark.sql.cassandra") \
+        .mode("append") \
+        .options(table=traffic_table, keyspace=keyspace) \
+        .save()
+    print("Data written to Cassandra for traffic table")
+    
+
+if __name__ == "__main__":
+
+    cassandra_cluster = Cluster([cassandra_host], port=cassandra_port)
+    cassandra_session = cassandra_cluster.connect()
 
     appName = "ConsumerApp"
     
@@ -148,12 +112,12 @@ if __name__ == "__main__":
 
 
     query_traffic = dfFcdParsed.writeStream \
-        .foreachBatch(writeTrafficToCassandra) \
+        .foreachBatch(writeTraffic) \
         .outputMode("append") \
         .start()
 
     query_pollution = dfEmissionParsed.writeStream \
-        .foreachBatch(writePollutionToCassandra) \
+        .foreachBatch(writePollution) \
         .outputMode("append") \
         .start()
 

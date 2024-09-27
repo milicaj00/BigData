@@ -21,6 +21,41 @@ window_duration = os.getenv('WINDOW_DURATION')
 window_type = os.getenv('WINDOW_TYPE')
 slide_duration = os.getenv('SLIDE_DURATION')
 
+emission_schema = StructType([
+        StructField("timestep_time", FloatType()),
+        StructField("vehicle_CO", FloatType()),
+        StructField("vehicle_CO2", FloatType()),
+        StructField("vehicle_HC", FloatType()),
+        StructField("vehicle_NOx", FloatType()),
+        StructField("vehicle_PMx", FloatType()),
+        StructField("vehicle_angle", FloatType()),
+        StructField("vehicle_eclass", StringType()),
+        StructField("vehicle_electricity", FloatType()),
+        StructField("vehicle_id", IntegerType()),
+        StructField("vehicle_lane", StringType()),
+        StructField("vehicle_fuel", FloatType()),
+        StructField("vehicle_noise", FloatType()),
+        StructField("vehicle_pos", FloatType()),
+        StructField("vehicle_route", StringType()),
+        StructField("vehicle_speed", FloatType()),
+        StructField("vehicle_type", StringType()),
+        StructField("vehicle_waiting", FloatType()),
+        StructField("vehicle_x", FloatType()),
+        StructField("vehicle_y", FloatType())
+    ])
+
+fcd_schema = StructType([
+        StructField("timestep_time", FloatType()),
+        StructField("vehicle_angle", FloatType()),
+        StructField("vehicle_id", StringType()),
+        StructField("vehicle_lane", StringType()),
+        StructField("vehicle_pos", FloatType()),
+        StructField("vehicle_speed", FloatType()),
+        StructField("vehicle_type", StringType()),
+        StructField("vehicle_x", FloatType()),
+        StructField("vehicle_y", FloatType())
+    ])
+
 if __name__ == "__main__":
 
     if window_type == 'sliding':
@@ -44,34 +79,14 @@ if __name__ == "__main__":
 
     spark.sparkContext.setLogLevel("ERROR")
 
+# pollution
+
     emission_df = spark.readStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", kafka_url) \
         .option("subscribe", emission_topic) \
         .load()
-    
-    emission_schema = StructType([
-        StructField("timestep_time", FloatType()),
-        StructField("vehicle_CO", FloatType()),
-        StructField("vehicle_CO2", FloatType()),
-        StructField("vehicle_HC", FloatType()),
-        StructField("vehicle_NOx", FloatType()),
-        StructField("vehicle_PMx", FloatType()),
-        StructField("vehicle_angle", FloatType()),
-        StructField("vehicle_eclass", StringType()),
-        StructField("vehicle_electricity", FloatType()),
-        StructField("vehicle_id", IntegerType()),
-        StructField("vehicle_lane", StringType()),
-        StructField("vehicle_fuel", FloatType()),
-        StructField("vehicle_noise", FloatType()),
-        StructField("vehicle_pos", FloatType()),
-        StructField("vehicle_route", StringType()),
-        StructField("vehicle_speed", FloatType()),
-        StructField("vehicle_type", StringType()),
-        StructField("vehicle_waiting", FloatType()),
-        StructField("vehicle_x", FloatType()),
-        StructField("vehicle_y", FloatType())
-    ])
+
 
     emission_df_parsed = emission_df.selectExpr("CAST(value AS STRING)") \
         .select(from_json(col("value"), emission_schema).alias("data")) \
@@ -91,15 +106,10 @@ if __name__ == "__main__":
 
     pollution_data = pollution_data.withColumn("Date", pollution_data.Date.end.cast("string")) 
 
-    pollution_data.selectExpr("to_json(struct(*)) AS value") \
-        .writeStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", kafka_url) \
-        .option("topic", pollution_topic) \
-        .option("checkpointLocation","checkpoint_dir") \
-        .outputMode("complete") \
-        .start()
 
+
+
+# traffic
 
     fcd_df = spark.readStream \
         .format("kafka") \
@@ -107,17 +117,6 @@ if __name__ == "__main__":
         .option("subscribe", fcd_topic) \
         .load()
     
-    fcd_schema = StructType([
-        StructField("timestep_time", FloatType()),
-        StructField("vehicle_angle", FloatType()),
-        StructField("vehicle_id", StringType()),
-        StructField("vehicle_lane", StringType()),
-        StructField("vehicle_pos", FloatType()),
-        StructField("vehicle_speed", FloatType()),
-        StructField("vehicle_type", StringType()),
-        StructField("vehicle_x", FloatType()),
-        StructField("vehicle_y", FloatType())
-    ])
 
     fcd_df_parsed = fcd_df.selectExpr("CAST(value AS STRING)") \
         .select(from_json(col("value"), fcd_schema).alias("data")) \
@@ -134,6 +133,8 @@ if __name__ == "__main__":
     traffic_data = traffic_data.withColumn("Date", traffic_data.Date.end.cast("string")) 
 
 
+
+# sending data
     traffic_data.selectExpr("to_json(struct(*)) AS value") \
         .writeStream \
         .format("kafka") \
@@ -143,6 +144,15 @@ if __name__ == "__main__":
         .outputMode("complete") \
         .start()
 
+    pollution_data.selectExpr("to_json(struct(*)) AS value") \
+        .writeStream \
+        .format("kafka") \
+        .option("kafka.bootstrap.servers", kafka_url) \
+        .option("topic", pollution_topic) \
+        .option("checkpointLocation","checkpoint_dir") \
+        .outputMode("complete") \
+        .start()
+    
 
     query_pollution = pollution_data.writeStream \
         .outputMode("complete") \

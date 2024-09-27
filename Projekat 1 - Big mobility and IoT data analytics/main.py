@@ -71,24 +71,29 @@ if __name__ == "__main__":
 
     args = sys.argv
     print(args)
+
     app_name = "App/"+ args[1]
     spark_master = "local[2]" if args[2] == 'local' else SPARK_URL
     start_time = time.time()
     spark = SparkSession.builder.appName(app_name).master(SPARK_URL).getOrCreate()
     task_time = 0
+
     if args[3] == 'vehicle':
         if(len(args) < 9):
             print("Nedovoljno argumenata!")
             exit()
         print("finding vehicles...")
         vehicle_type = args[9] if len(args) == 9 else ''
+
         task_time = find_vehicles(spark, float(args[4]),float(args[5]),float(args[6]), float(args[7]), float(args[8]), vehicle_type)
+        
     elif args[3] == 'pollution':
         print("calculating air pollution...")
 
         if(len(args) < 6):
             print("Nedovoljno argumenata!")
             exit()
+
         task_time = air_polution(spark, float(args[4]), float(args[5]))
 
     elif args[3] == 'fuel':
@@ -96,7 +101,10 @@ if __name__ == "__main__":
         if(len(args) < 6):
             print("Nedovoljno argumenata!")
             exit()
+
         task_time = fuel_consumption(spark, float(args[4]), float(args[5]))
+
+
     print(f"Vreme izvrsenja taska {args[1]}: {task_time}")
     print(f"Vreme izvrsenja aplikacije: {time.time() - start_time}")
     spark.stop()

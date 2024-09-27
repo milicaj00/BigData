@@ -60,11 +60,11 @@ if __name__ == '__main__':
                 vehicle_info['vehicle_x'] = float(row['vehicle_x']) 
                 vehicle_info['vehicle_y'] = float(row['vehicle_y']) 
 
-                producer.produce(emission_topic, key = 'stockholm', value = json.dumps(emission_info), callback = receipt)
-                producer.produce(fcd_topic, key = 'stockholm', value = json.dumps(vehicle_info), callback = receipt)
+                producer.produce(emission_topic, key = 'berlin', value = json.dumps(emission_info), callback = receipt)
+                producer.produce(fcd_topic, key = 'berlin', value = json.dumps(vehicle_info), callback = receipt)
                 producer.flush()
                 time.sleep(0.1)
 
-        time_offset += 1
+            time_offset += 1
         
     print('Kafka message producer done')

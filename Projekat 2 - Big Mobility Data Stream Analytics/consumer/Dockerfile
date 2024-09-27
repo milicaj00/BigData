@@ -1,14 +1,3 @@
-# FROM bde2020/spark-python-template:3.1.2-hadoop3.2
-
-# ENV SPARK_APPLICATION_PYTHON_LOCATION /app/consumer.py
-
-# ENV SPARK_APPLICATION_ARGS ""
-# ENV KAFKA_URL kafka:9092
-# ENV CASSANDRA_HOST cassandra
-# ENV CASSANDRA_PORT 9042
-# ENV WINDOW_DURATION "1 hour"
-# ENV N 3
-
 FROM bitnami/spark:latest
 
 COPY requirements.txt /app/
