@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+    spark:
+        container_name: spark-master-x
+        image: docker.io/bitnami/spark:latest
+        environment:
+            - SPARK_MODE=master
+        ports:
+            - "8080:8080"
+    spark-worker:
+        container_name: spark-worker
+        image: docker.io/bitnami/spark:latest
+        environment:
+            - SPARK_MODE=worker
+            - SPARK_MASTER_URL=spark://spark:7077
+
+    streaming:
+        build: ./streamingApp
+        container_name: streaming
+        image: streaming
+        restart: unless-stopped
+        volumes:
+            - appdata:/var/www
+
+        depends_on:
+            - spark
+
+networks:
+    default:
+        external:
+            name: bde
+volumes:
+    appdata:

@@ -1,0 +1,27 @@
+
+docker network create bde
+docker-compose up -d
+
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-fcd
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-emission
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-pollution
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-traffic
+
+kafka-topics.sh --list --bootstrap-server localhost:9092
+
+
+
+docker container rm streaming
+docker build --rm -t streaming-app .
+docker run --net bde --name streaming streaming-app
+
+
+docker container rm consumer
+docker build --rm -t consumer-app .
+docker run --net bde --name consumer consumer-app
+
+
+cqlsh
+use bigdata;
+select * from pollution;
+select * from traffic;
