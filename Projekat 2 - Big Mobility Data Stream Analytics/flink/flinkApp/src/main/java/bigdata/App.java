@@ -116,7 +116,7 @@ public class App {
         DataStream<TrafficData> vehicleCount = LaneAnalyzer.calculateVehiclesOnLane(laneGroupedWindowedStream);
         vehicleCount.addSink(new FlinkKafkaProducer<TrafficData>(traffic_topic, new TrafficDataSerializer(), properties));
 
-        env.execute("Stockholm");
+        env.execute("Berlin");
     }
 
 }
