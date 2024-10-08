@@ -1,0 +1,29 @@
+
+docker network create bigdata
+
+docker-compose up -d
+
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-fcd
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-emission
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-pollution
+kafka-topics.sh --create --bootstrap-server localhost:9092 --topic berlin-traffic
+
+kafka-topics.sh --list --bootstrap-server localhost:9092
+
+
+docker container rm models
+docker build --rm -t models-app .
+docker run --net bde --name models models-app
+
+
+docker container rm streaming-p3
+docker build --rm -t streaming-p3-app .
+docker run --net bde --name streaming-p3 streaming-p3-app
+
+
+hadoop fs -getmerge /output/claster data/final_fcd.csv
+hadoop fs -getmerge /output/predicted data/final_emissions.csv
+
+
+
+hdfs dfs -rm -R /output

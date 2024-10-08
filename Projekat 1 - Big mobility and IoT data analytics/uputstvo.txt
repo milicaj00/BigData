@@ -9,8 +9,8 @@ python tools/xml/xml2csv.py "C:\Users\milica\Desktop\Elfak\master\Big Data\Proje
 
 
 
-docker network create -d bde
-docker-compose up
+docker network create  bde
+docker-compose up -d
 
 docker cp b_emissions.csv namenode:/data
 docker cp b_fcd.csv namenode:/data
