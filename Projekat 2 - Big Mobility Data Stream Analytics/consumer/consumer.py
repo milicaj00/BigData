@@ -4,7 +4,7 @@ from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
 import os
 from cassandra.cluster import Cluster
-
+import uuid
 
 # keyspace = "bigdata"
 # pollution_table = "pollution"
@@ -106,9 +106,17 @@ if __name__ == "__main__":
                          .withColumnRenamed("LanePMx", "lanepmx") \
                          .withColumnRenamed("LaneNoise", "lanenoise")
 
+
+    dfEmissionParsed = dfEmissionParsed.withColumn("id", expr("uuid()"))
+
+
     dfFcdParsed = dfFcdParsed.withColumnRenamed("Date", "date") \
                                 .withColumnRenamed("LaneId", "laneid") \
                                 .withColumnRenamed("VehicleCount", "vehiclecount")
+    
+
+    dfFcdParsed = dfFcdParsed.withColumn("id", expr("uuid()"))
+
 
 
     query_traffic = dfFcdParsed.writeStream \

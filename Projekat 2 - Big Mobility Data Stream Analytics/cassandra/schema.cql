@@ -9,7 +9,8 @@ USE bigdata;
 DROP TABLE IF EXISTS bigdata.pollution;
 
 CREATE TABLE bigdata.pollution (
-  date TIMESTAMP PRIMARY KEY,
+  id UUID PRIMARY KEY,     
+  date TIMESTAMP,
   laneId text,
   laneCO double,
   laneCO2 double,          
@@ -22,7 +23,8 @@ CREATE TABLE bigdata.pollution (
 DROP TABLE IF EXISTS bigdata.traffic;
 
 CREATE TABLE bigdata.traffic (
-  date TIMESTAMP PRIMARY KEY,
+  id UUID PRIMARY KEY,     
+  date TIMESTAMP,
   laneId text,
   vehicleCount int
 );
